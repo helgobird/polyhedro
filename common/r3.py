@@ -1,4 +1,4 @@
-from math import sin, cos
+from math import sin, cos, sqrt
 
 
 class R3:
@@ -41,6 +41,13 @@ class R3:
             self.y * other.z - self.z * other.y,
             self.z * other.x - self.x * other.z,
             self.x * other.y - self.y * other.x)
+
+    def norm(self):
+        return sqrt(self.dot(self))
+
+    @staticmethod
+    def area(a, b, c):
+        return (a - c).cross(b - c) * 0.5
 
 
 if __name__ == "__main__":
