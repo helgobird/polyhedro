@@ -1,4 +1,4 @@
-from math import pi
+from math import pi, cos
 from functools import reduce
 from operator import add
 from common.r3 import R3
@@ -11,6 +11,9 @@ class Segment:
 
     def __init__(self, beg, fin):
         self.beg, self.fin = beg, fin
+
+    def entrails(self):
+        return [self.beg, self.fin]
 
     # Отрезок вырожден?
     def is_degenerate(self):
@@ -87,6 +90,8 @@ class Facet:
 
     def __init__(self, vertexes):
         self.vertexes = vertexes
+        self.invis = True
+        self.conds = False
 
     # «Вертикальна» ли грань?
     def is_vertical(self):
@@ -116,6 +121,26 @@ class Facet:
         return sum(self.vertexes, R3(0.0, 0.0, 0.0)) * \
             (1.0 / len(self.vertexes))
 
+    # Удовлетворяет условию на угол между гранью и плоскостью Oxy?
+    def satcondf(self):
+        h = self.h_normal()
+        return abs(h.z) >= h.norm() * cos(pi / 7)
+
+    # Удовлетворяет условию на расстояние от центра грани до прямой x = 2?
+    def satconds(self, c):
+        v = self.vertexes
+        return len(v) * c < (sum(v, R3(0.0, 0.0, 0.0))).x < 3.0 * len(v) * c
+
+    # Нахождение площади проекции грани на Oxy
+    @staticmethod
+    def oxyarea(self):
+        area = 0.0
+        for i in range(1, len(self.vertexes) - 1):
+            area += abs(R3.area(self.vertexes[0],
+                                self.vertexes[i],
+                                self.vertexes[i+1]).z)
+        return area
+
 
 class Polyedr:
     """ Полиэдр """
@@ -127,15 +152,18 @@ class Polyedr:
 
         # списки вершин, рёбер и граней полиэдра
         self.vertexes, self.edges, self.facets = [], [], []
+        self.oxyarea = 0.0
+        self.numedge = []
 
         # список строк файла
         with open(file) as f:
+            numer = 0
             for i, line in enumerate(f):
                 if i == 0:
                     # обрабатываем первую строку; buf - вспомогательный массив
                     buf = line.split()
                     # коэффициент гомотетии
-                    c = float(buf.pop(0))
+                    self.gomc = float(buf.pop(0))
                     # углы Эйлера, определяющие вращение
                     alpha, beta, gamma = (float(x) * pi / 180.0 for x in buf)
                 elif i == 1:
@@ -145,8 +173,9 @@ class Polyedr:
                     # задание всех вершин полиэдра
                     x, y, z = (float(x) for x in line.split())
                     self.vertexes.append(R3(x, y, z).rz(
-                        alpha).ry(beta).rz(gamma) * c)
+                        alpha).ry(beta).rz(gamma) * self.gomc)
                 else:
+                    self.numedge.append(numer)
                     # вспомогательный массив
                     buf = line.split()
                     # количество вершин очередной грани
@@ -156,8 +185,11 @@ class Polyedr:
                     # задание рёбер грани
                     for n in range(size):
                         self.edges.append(Edge(vertexes[n - 1], vertexes[n]))
+                        numer += 1
                     # задание самой грани
                     self.facets.append(Facet(vertexes))
+
+            self.numedge.append(numer)
 
     # Метод изображения полиэдра
     def draw(self, tk):
@@ -167,3 +199,19 @@ class Polyedr:
                 e.shadow(f)
             for s in e.gaps:
                 tk.draw_line(e.r3(s.beg), e.r3(s.fin))
+
+    def _shader(self):
+        for e in self.edges:
+            for f in self.facets:
+                e.shadow(f)
+
+    # Метод подсчета площади проекций граней
+    def ihwfunc(self):
+        for i in range(1, len(self.facets)+1):
+            is_invis = all(len(self.edges[k].gaps) == 0
+                           for k in range(self.numedge[i-1],
+                                          self.numedge[i]))
+            face = self.facets[i-1]
+            if is_invis and face.satcondf() and face.satconds(self.gomc):
+                self.oxyarea += Facet.oxyarea(self.facets[i-1])
+        self.oxyarea /= self.gomc ** 2
