@@ -86,3 +86,39 @@ class TestFacet:
     def test_center02(self):
         f = Facet([R3(0.0, 0.0, 0.0), R3(3.0, 0.0, 0.0), R3(0.0, 3.0, 0.0)])
         assert f.center().approx((R3(1.0, 1.0, 0.0)))
+
+    # Удовлетворяет ли условию на угол?
+    def test_satcondf01(self):
+        f = Facet([R3(0.0, 0.0, 1.0), R3(10.0, 0.0, 0.0), R3(0.0, 10.0, 0.0)])
+        assert f.satcondf() is True
+
+    def test_satcondf02(self):
+        f = Facet([R3(0.0, 0.0, 10.0), R3(1.0, 0.0, 0.0), R3(0.0, 1.0, 0.0)])
+        assert f.satcondf() is False
+
+    # Удовлетворяет ли условию на центр грани?
+    def test_satconds01(self):
+        f = Facet([R3(3.0, 0.0, 0.0), R3(1.0, 0.0, 0.0), R3(2.0, 1.0, 0.0)])
+        assert f.satconds(1.0) is True
+
+    def test_satconds02(self):
+        f = Facet([R3(4.0, 1.0, 0.0), R3(4.0, -1.0, 0.0), R3(0.0, 0.0, 0.0)])
+        assert f.satconds(1.0) is True
+
+    def test_satconds03(self):
+        f = Facet([R3(-3.0, 0.0, 0.0), R3(-1.0, 0.0, 0.0),
+                   R3(-2.0, -1.0, 0.0)])
+        assert f.satconds(1.0) is False
+
+    def test_satconds04(self):
+        f = Facet([R3(2.0, 1.0, 0.0), R3(2.0, -1.0, 0.0), R3(-4.0, 0.0, 0.0)])
+        assert f.satconds(1.0) is False
+
+    # Площадь проекции грани
+    def test_oxyarea01(self):
+        f = Facet([R3(4.0, 1.0, 0.0), R3(4.0, -1.0, 0.0), R3(0.0, 0.0, 0.0)])
+        assert Facet.oxyarea(f) == approx(4.0)
+
+    def test_oxyarea02(self):
+        f = Facet([R3(1.0, 0.0, 0.0), R3(0.0, 1.0, 0.0), R3(0.0, 0.0, 1.0)])
+        assert Facet.oxyarea(f) == approx(0.5)
