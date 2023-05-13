@@ -12,9 +12,6 @@ class Segment:
     def __init__(self, beg, fin):
         self.beg, self.fin = beg, fin
 
-    def entrails(self):
-        return [self.beg, self.fin]
-
     # Отрезок вырожден?
     def is_degenerate(self):
         return self.beg >= self.fin
